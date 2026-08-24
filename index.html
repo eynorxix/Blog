@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Blog</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="viewer-bar hidden" id="viewerBar">
+    <span id="viewerText">Viendo un blog</span>
+    <button class="btn primary" id="createOwnBtn">Crear mi blog</button>
+  </div>
+
+  <div class="profile-bar">
+    <button class="avatar" id="avatarBtn" title="Cambiar avatar"></button>
+    <div class="identity">
+      <h1 id="username" class="username" spellcheck="false">tu_nombre</h1>
+      <div class="identity-row">
+        <span class="vote-badge hidden" id="voteBadge" title="Tu voto en DoomsdayGrid"></span>
+        <span class="badge-label hidden" id="voteBadgeLabel">tu apoyo</span>
+      </div>
+      <p class="hint">blog personal · nostr edition</p>
+    </div>
+    <div class="actions">
+      <span class="sync" id="syncStatus"><span class="dot"></span><span id="syncText"></span></span>
+      <button class="btn ghost" id="accountBtn">👤 Cuenta</button>
+      <button class="btn primary" id="editModeBtn">✏️ Editar</button>
+    </div>
+  </div>
+
+  <main class="bento" id="bento">
+    <section class="card radar-card" id="radarCard" data-size="big">
+      <div class="radar-head">
+        <h3>🕷️ Apoyo Multiversal</h3>
+        <button class="btn sm vote-cta" id="voteCtaBtn">🗳️ Votar</button>
+      </div>
+      <div class="radar-wrap">
+        <canvas id="multiverseRadar"></canvas>
+      </div>
+      <span class="radar-live radar-foot"><span class="live-dot"></span><span id="liveLabel">conectando…</span></span>
+    </section>
+
+    <button class="add-card" id="addCardBtn">
+      <span>＋</span>
+      Nueva caja
+    </button>
+  </main>
+
+  <dialog class="dialog" id="loginDialog">
+    <div class="dialog-body">
+      <h2>Conecta tu identidad Nostr</h2>
+      <p class="dialog-sub">Tu cuenta es una clave criptográfica. Tu blog se publica firmado en la red Nostr y sincroniza en todos tus dispositivos.</p>
+
+      <label class="field">
+        <span>Tu nombre</span>
+        <input type="text" id="loginNameInput" placeholder="satoshi" maxlength="40">
+      </label>
+
+      <div class="login-options">
+        <button class="btn primary wide" id="btnCreateIdentity">✨ Crear identidad nueva</button>
+
+        <div class="divider">o importa una clave existente</div>
+
+        <input type="password" id="nsecInput" class="nsec-input" placeholder="nsec1…" autocomplete="off">
+        <button class="btn ghost wide" id="btnImportNsec">🔑 Iniciar sesión con nsec</button>
+
+        <button class="btn ghost wide hidden" id="btnExtension">🦊 Usar extensión (Alby/nos2x)</button>
+      </div>
+
+      <p class="fine-print">Las claves se guardan solo en este navegador. Haz copia de seguridad de tu nsec desde 👤 Cuenta.</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" id="accountDialog">
+    <div class="dialog-body">
+      <h2>Tu cuenta</h2>
+
+      <label class="field">
+        <span>Tu npub (compártelo para que te encuentren)</span>
+        <div class="copy-row">
+          <input type="text" id="npubOutput" readonly>
+          <button class="btn ghost sm" id="copyNpubBtn">Copiar</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span>Enlace público de tu blog</span>
+        <div class="copy-row">
+          <input type="text" id="shareLink" readonly>
+          <button class="btn ghost sm" id="copyLinkBtn">Copiar</button>
+        </div>
+      </label>
+
+      <div class="field" id="backupSection">
+        <span>Copia de seguridad · tu clave privada (nsec)</span>
+        <p class="warning">⚠️ Guárdala en un lugar seguro. Quien la tenga controla tu blog. Nunca la compartas.</p>
+        <div class="copy-row">
+          <input type="password" id="nsecOutput" readonly>
+          <button class="btn ghost sm" id="revealNsecBtn">Mostrar</button>
+          <button class="btn ghost sm" id="copyNsecBtn">Copiar</button>
+        </div>
+      </div>
+
+      <menu class="dialog-menu space-between">
+        <button class="btn danger-text" id="logoutBtn">Cerrar sesión</button>
+        <button value="cancel" class="btn primary" onclick="this.closest('dialog').close()">Listo</button>
+      </menu>
+    </div>
+  </dialog>
+
+  <dialog class="dialog key-guard" id="keyGuardDialog">
+    <div class="dialog-body">
+      <h2>🔐 Guarda tu clave nsec</h2>
+      <p class="dialog-sub">Esta clave es lo único que puede editar tu blog. Léela con calma.</p>
+
+      <div class="key-display">
+        <code id="kgNsec"></code>
+        <button type="button" class="btn ghost sm" id="kgCopyBtn">Copiar</button>
+      </div>
+
+      <ul class="key-facts">
+        <li>Tu blog es <strong>público</strong>: cualquiera con tu enlace puede leerlo.</li>
+        <li>La <strong>única forma de editar tu blog</strong> es iniciando sesión con esta clave.</li>
+        <li>Si la pierdes, nadie puede recuperarla — no existe "olvidé mi contraseña".</li>
+        <li>Cópiala y guárdala en un lugar seguro: gestor de contraseñas, papel, USB…</li>
+      </ul>
+
+      <button class="btn primary wide" id="kgContinueBtn" disabled>⏳ Continuar (10 s)</button>
+      <p class="fine-print center">El cronómetro te da tiempo de copiarla antes de continuar.</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" id="cardDialog">
+    <form method="dialog" class="dialog-body" id="cardForm">
+      <h2 id="cardDialogTitle">Nueva caja</h2>
+
+      <div class="tabs" id="typeTabs">
+        <button type="button" data-type="thought" class="tab active">💭 Pensamiento</button>
+        <button type="button" data-type="image" class="tab">🖼️ Imagen</button>
+      </div>
+
+      <label class="field" id="imageFields">
+        <span>Imagen (URL o archivo → Blossom)</span>
+        <input type="url" id="imgUrlInput" placeholder="https://…/foto.jpg">
+        <input type="file" id="imgFileInput" accept="image/*">
+        <img id="imgPreview" class="preview hidden" alt="">
+        <span class="upload-status" id="uploadStatus"></span>
+      </label>
+
+      <label class="field">
+        <span id="textLabel">¿Qué estás pensando?</span>
+        <textarea id="cardText" rows="4" placeholder="Escribe aquí…"></textarea>
+      </label>
+
+      <div class="field" id="colorField">
+        <span>Color de la caja</span>
+        <div class="swatches" id="colorSwatches"></div>
+      </div>
+
+      <menu class="dialog-menu">
+        <button value="cancel" class="btn ghost">Cancelar</button>
+        <button value="confirm" id="saveCardBtn" class="btn primary">Guardar</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog class="dialog" id="avatarDialog">
+    <form method="dialog" class="dialog-body">
+      <h2>Avatar</h2>
+
+      <div class="field">
+        <span>Elige un icono</span>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
+
+      <label class="field">
+        <span>O sube tu foto (→ Blossom)</span>
+        <input type="file" id="avatarFileInput" accept="image/*">
+        <span class="upload-status" id="avatarUploadStatus"></span>
+      </label>
+
+      <menu class="dialog-menu">
+        <button value="cancel" class="btn ghost">Cancelar</button>
+        <button value="confirm" class="btn primary">Guardar</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <div id="toasts"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
