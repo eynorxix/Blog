@@ -13,6 +13,7 @@ import {
 import { uploadBlob } from './js/blossom.js';
 import { publishBlogState, fetchBlogState, signWithIdentity, fetchLatestUserVote, subscribeUserVote } from './js/nostr.js';
 import { initRadar, UNIVERSES } from './js/radar.js';
+import { nativeDialog, openDlg, closeDlg } from './js/compat.js';
 
 const CACHE_KEY = 'bento_blog_cache_v2';
 
@@ -232,7 +233,7 @@ function toggleEdit() {
 
 $('#editModeBtn').addEventListener('click', (e) => {
   if (!identity) {
-    loginDialog.showModal();
+    openDlg(loginDialog);
     return;
   }
   if (identity.type === 'extension') {
@@ -253,7 +254,7 @@ function openEditGate() {
   const err = $('#egError');
   err.textContent = '';
   err.classList.add('hidden');
-  editGateDialog.showModal();
+  openDlg(editGateDialog);
   setTimeout(() => $('#egNsecInput').focus(), 50);
 }
 
@@ -277,7 +278,7 @@ async function confirmEditGate() {
       return;
     }
     editUnlocked = true;
-    editGateDialog.close();
+    closeDlg(editGateDialog);
     toggleEdit();
   } catch (err2) {
     err.textContent = 'nsec inválido: ' + err2.message;
@@ -330,7 +331,7 @@ function openCardDialog(card) {
   renderColorSwatches();
   updateFieldVisibility();
 
-  cardDialog.showModal();
+  openDlg(cardDialog);
 }
 
 function setTabActive(type) {
@@ -408,20 +409,16 @@ $('#imgFileInput').addEventListener('change', async (e) => {
   }
 });
 
-$('#cardForm').addEventListener('submit', (e) => {
-  if (e.submitter?.value !== 'confirm') return;
-
+$('#saveCardBtn').addEventListener('click', () => {
   const text = $('#cardText').value.trim();
-  let img = pendingImgData;
+  const img = pendingImgData;
 
   if (dialogType === 'image' && !img) {
     alert('Agrega una imagen (URL o archivo).');
-    e.preventDefault();
     return;
   }
   if (dialogType === 'thought' && !text) {
     alert('Escribe algo primero 🙂');
-    e.preventDefault();
     return;
   }
 
@@ -443,6 +440,7 @@ $('#cardForm').addEventListener('submit', (e) => {
 
   commit();
   renderCards();
+  closeDlg(cardDialog, 'confirm');
 });
 
 let pickedEmoji = '🙂';
@@ -450,7 +448,7 @@ let pendingAvatarData = null;
 
 avatarBtn.addEventListener('click', () => {
   if (!identity) {
-    loginDialog.showModal();
+    openDlg(loginDialog);
     return;
   }
   pickedEmoji = state.avatar || '🙂';
@@ -458,7 +456,7 @@ avatarBtn.addEventListener('click', () => {
   $('#avatarFileInput').value = '';
   $('#avatarUploadStatus').textContent = '';
   renderEmojiGrid();
-  avatarDialog.showModal();
+  openDlg(avatarDialog);
 });
 
 function renderEmojiGrid() {
@@ -488,8 +486,7 @@ $('#avatarFileInput').addEventListener('change', async (e) => {
   }
 });
 
-avatarDialog.addEventListener('close', () => {
-  if (avatarDialog.returnValue !== 'confirm') return;
+$('#avatarConfirmBtn').addEventListener('click', () => {
   if (pendingAvatarData) {
     state.avatarUrl = pendingAvatarData;
     state.avatar = '';
@@ -499,6 +496,7 @@ avatarDialog.addEventListener('close', () => {
   }
   commit();
   applyIdentity();
+  closeDlg(avatarDialog, 'confirm');
 });
 
 let kgAllowClose = false;
@@ -524,7 +522,7 @@ function openKeyGuard(nsec) {
     }
   }, 1000);
 
-  keyGuardDialog.showModal();
+  openDlg(keyGuardDialog);
 }
 
 keyGuardDialog.addEventListener('cancel', (e) => {
@@ -541,16 +539,38 @@ $('#kgContinueBtn').addEventListener('click', () => {
     keyGuardDialog.timer = null;
   }
   kgAllowClose = true;
-  keyGuardDialog.close();
+  closeDlg(keyGuardDialog);
 });
 
-async function copyText(text, label) {
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
   try {
-    await navigator.clipboard.writeText(text);
-    toast(label + ' copiado ✅');
+    ok = document.execCommand('copy');
   } catch (err) {
-    toast('No se pudo copiar', 'err');
+    ok = false;
   }
+  ta.remove();
+  return ok;
+}
+
+async function copyText(text, label) {
+  let ok = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    }
+  } catch (err) {}
+  if (!ok) ok = legacyCopy(text);
+  if (ok) toast(label + ' copiado ✅');
+  else toast('No se pudo copiar automáticamente — selecciónalo y copia manualmente', 'err');
 }
 
 function renderVoteBadge(universeId, createdAt) {
@@ -577,14 +597,37 @@ async function trackUserVote(pubkeyHex) {
   const vote = await fetchLatestUserVote(pubkeyHex);
   if (vote) renderVoteBadge(vote.universe, vote.createdAt);
   else renderVoteBadge(null);
-  if (voteSub) voteSub.close?.();
+  if (voteSub && voteSub.close) voteSub.close();
   voteSub = await subscribeUserVote(pubkeyHex, (universe, createdAt) => {
     renderVoteBadge(universe, createdAt);
   });
 }
 
-$('#supportBtn').addEventListener('click', () => $('#supportDialog').showModal());
-$('#donateBtn').addEventListener('click', () => $('#donateDialog').showModal());
+$('#supportBtn').addEventListener('click', () => openDlg($('#supportDialog')));
+$('#donateBtn').addEventListener('click', () => openDlg($('#donateDialog')));
+
+document.querySelectorAll('[data-close]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const dlg = btn.closest('dialog');
+    if (dlg) closeDlg(dlg, 'cancel');
+  });
+});
+
+document.querySelectorAll('.dlg-cancel').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const dlg = btn.closest('dialog');
+    if (dlg) closeDlg(dlg, 'cancel');
+  });
+});
+
+document.querySelectorAll('a[data-ext]').forEach((a) => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const url = a.href;
+    const w = window.open(url, '_blank', 'noopener');
+    if (!w) location.href = url;
+  });
+});
 
 document.querySelectorAll('.copy-addr').forEach((btn) => {
   btn.addEventListener('click', () => copyText(btn.parentElement.querySelector('input').value, 'Dirección'));
@@ -592,7 +635,7 @@ document.querySelectorAll('.copy-addr').forEach((btn) => {
 
 $('#voteCtaBtn').addEventListener('click', () => {
   if (!identity) {
-    loginDialog.showModal();
+    openDlg(loginDialog);
     toast('Crea tu cuenta para votar con tu identidad', 'warn');
     return;
   }
@@ -617,11 +660,11 @@ accountDialog.addEventListener('close', () => {
 
 $('#accountBtn').addEventListener('click', async () => {
   if (!identity) {
-    loginDialog.showModal();
+    openDlg(loginDialog);
     return;
   }
   fillAccountDialog(await toNpub(identity.pub));
-  accountDialog.showModal();
+  openDlg(accountDialog);
 });
 
 $('#copyNpubBtn').addEventListener('click', () => copyText($('#npubOutput').value, 'npub'));
@@ -659,7 +702,7 @@ $('#btnCreateIdentity').addEventListener('click', async () => {
     identity = await createIdentity(name);
     saveIdentity(identity);
     state.username = name || state.username;
-    loginDialog.close();
+    closeDlg(loginDialog);
     toast('Identidad creada 🎉');
     await afterLogin();
     openKeyGuard(await toNsec(identity));
@@ -680,7 +723,7 @@ $('#btnImportNsec').addEventListener('click', async () => {
     identity = await importIdentity(nsec, $('#loginNameInput').value.trim());
     saveIdentity(identity);
     $('#nsecInput').value = '';
-    loginDialog.close();
+    closeDlg(loginDialog);
     toast('Sesión iniciada 🔑');
     await afterLogin();
   } catch (err) {
@@ -694,7 +737,7 @@ $('#btnExtension').addEventListener('click', async () => {
   try {
     identity = await extensionIdentity();
     saveIdentity(identity);
-    loginDialog.close();
+    closeDlg(loginDialog);
     toast('Conectado con extensión 🦊');
     await afterLogin();
   } catch (err) {
@@ -767,6 +810,10 @@ async function enterViewerMode(pubkeyHex) {
 }
 
 async function boot() {
+  if (!nativeDialog || !window.crypto || !window.crypto.subtle) {
+    $('#compatNote').classList.remove('hidden');
+  }
+
   if (window.nostr && window.nostr.getPublicKey) {
     $('#btnExtension').classList.remove('hidden');
   }
@@ -792,7 +839,7 @@ async function boot() {
   }
 
   if (!identity) {
-    loginDialog.showModal();
+    openDlg(loginDialog);
     setSyncStatus('idle');
   } else {
     await afterLogin();

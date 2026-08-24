@@ -44,7 +44,7 @@ export async function uploadBlob(file, signEvent, onProgress) {
   let lastError = null;
   for (const server of BLOSSOM_SERVERS) {
     try {
-      onProgress?.(`subiendo a ${server.replace('https://', '')}…`);
+      if (onProgress) onProgress(`subiendo a ${server.replace('https://', '')}…`);
       const res = await fetch(server + '/upload', {
         method: 'PUT',
         headers: {

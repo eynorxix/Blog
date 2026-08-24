@@ -116,7 +116,7 @@ export async function subscribeVoteTotals(onUpdate, onLive) {
       },
       oneose: () => {
         compute();
-        onLive?.();
+        if (onLive) onLive();
       },
       maxWait: 9000,
     }

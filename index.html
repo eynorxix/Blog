@@ -33,10 +33,14 @@
   </div>
 
   <nav class="toolbar">
-    <a class="tool-btn creator" href="https://eynorxix.github.io/Blog/?u=npub1survd7dr0z582gu6kkh4fxl6rwj3fzq3vcgu2fq46kj6t2253s7qdmpn9a" target="_blank" rel="noopener">👑 Creador</a>
+    <a class="tool-btn creator" data-ext href="https://eynorxix.github.io/Blog/?u=npub1survd7dr0z582gu6kkh4fxl6rwj3fzq3vcgu2fq46kj6t2253s7qdmpn9a">👑 Creador</a>
     <button class="tool-btn" id="supportBtn">🤝 Support</button>
     <button class="tool-btn" id="donateBtn">💝 Donate</button>
   </nav>
+
+  <div class="compat-note hidden" id="compatNote">
+    ⚠️ Estás en un navegador integrado (TikTok/Instagram). Algunas funciones pueden fallar — abre el blog en Chrome o Safari para la mejor experiencia.
+  </div>
 
   <main class="bento" id="bento">
     <section class="card radar-card" id="radarCard" data-size="big">
@@ -113,7 +117,7 @@
 
       <menu class="dialog-menu space-between">
         <button class="btn danger-text" id="logoutBtn">Cerrar sesión</button>
-        <button value="cancel" class="btn primary" onclick="this.closest('dialog').close()">Listo</button>
+        <button value="cancel" class="btn primary" data-close="1">Listo</button>
       </menu>
     </div>
   </dialog>
@@ -149,7 +153,7 @@
       <p class="field-error hidden" id="egError"></p>
 
       <menu class="dialog-menu space-between">
-        <button value="cancel" class="btn ghost" onclick="this.closest('dialog').close()">Cancelar</button>
+        <button value="cancel" class="btn ghost" data-close="1">Cancelar</button>
         <button class="btn primary" id="egConfirmBtn">🔓 Desbloquear edición</button>
       </menu>
       <p class="fine-print center">No te la pediremos de nuevo durante esta sesión.</p>
@@ -161,11 +165,11 @@
       <h2>🤝 Support</h2>
       <p class="dialog-sub">Sígueme en mis redes para más proyectos:</p>
       <div class="social-list">
-        <a class="social-btn" href="https://x.com/eynor_xix" target="_blank" rel="noopener">𝕏 · @eynor_xix</a>
-        <a class="social-btn" href="https://www.reddit.com/u/eynorxix/s/oZCR0PIqin" target="_blank" rel="noopener">Reddit · u/eynorxix</a>
+        <a class="social-btn" data-ext href="https://x.com/eynor_xix">𝕏 · @eynor_xix</a>
+        <a class="social-btn" data-ext href="https://www.reddit.com/u/eynorxix/s/oZCR0PIqin">Reddit · u/eynorxix</a>
       </div>
       <menu class="dialog-menu">
-        <button value="cancel" class="btn primary" onclick="this.closest('dialog').close()">Listo</button>
+        <button value="cancel" class="btn primary" data-close="1">Listo</button>
       </menu>
     </div>
   </dialog>
@@ -196,13 +200,13 @@
       </div>
 
       <menu class="dialog-menu">
-        <button value="cancel" class="btn primary" onclick="this.closest('dialog').close()">Cerrar</button>
+        <button value="cancel" class="btn primary" data-close="1">Cerrar</button>
       </menu>
     </div>
   </dialog>
 
   <dialog class="dialog" id="cardDialog">
-    <form method="dialog" class="dialog-body" id="cardForm">
+    <div class="dialog-body" id="cardForm">
       <h2 id="cardDialogTitle">Nueva caja</h2>
 
       <div class="tabs" id="typeTabs">
@@ -229,14 +233,14 @@
       </div>
 
       <menu class="dialog-menu">
-        <button value="cancel" class="btn ghost">Cancelar</button>
-        <button value="confirm" id="saveCardBtn" class="btn primary">Guardar</button>
+        <button type="button" class="btn ghost dlg-cancel">Cancelar</button>
+        <button type="button" id="saveCardBtn" class="btn primary">Guardar</button>
       </menu>
-    </form>
+    </div>
   </dialog>
 
   <dialog class="dialog" id="avatarDialog">
-    <form method="dialog" class="dialog-body">
+    <div class="dialog-body">
       <h2>Avatar</h2>
 
       <div class="field">
@@ -251,10 +255,10 @@
       </label>
 
       <menu class="dialog-menu">
-        <button value="cancel" class="btn ghost">Cancelar</button>
-        <button value="confirm" class="btn primary">Guardar</button>
+        <button type="button" class="btn ghost dlg-cancel">Cancelar</button>
+        <button type="button" id="avatarConfirmBtn" class="btn primary">Guardar</button>
       </menu>
-    </form>
+    </div>
   </dialog>
 
   <div id="toasts"></div>
