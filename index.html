@@ -2,22 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Blog</title>
-  <meta name="theme-color" content="#7c5cff">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="assets/icon-192.png">
-  <link rel="apple-touch-icon" href="assets/icon-192.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="EynorBlog">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
   <div class="profile-bar">
+    <button class="avatar" id="avatarBtn" title="Cambiar avatar"></button>
     <div class="identity">
       <h1 id="username" class="username" spellcheck="false">tu_nombre</h1>
       <div class="identity-row">
@@ -28,16 +21,15 @@
     </div>
     <div class="actions">
       <span class="sync" id="syncStatus"><span class="dot"></span><span id="syncText"></span></span>
-      <button class="btn chip" id="accountChip">Registrarse</button>
-      <button class="btn ghost" id="accountBtn">👤 Cuenta</button>
+      <button class="btn ghost" id="accountBtn"> Cuenta</button>
       <button class="btn primary" id="editModeBtn">✏ Editar</button>
     </div>
   </div>
 
   <nav class="toolbar">
-    <a class="tool-btn creator hidden" id="creatorBtn" href="https://eynorxix.github.io/Blog/?u=npub1gre2q6mnpfg9mjculusl2m8ue93a0xef9rx398e8a4nalqe4y24s9xezm8">👑 Creador</a>
-    <button class="tool-btn" id="supportBtn">🤝 Support</button>
-    <button class="tool-btn" id="donateBtn">💝 Donate</button>
+    <a class="tool-btn creator" id="creatorBtn" data-ext href="https://eynorxix.github.io/Blog/?u=npub1ek9cchq4mqynyezyfshc5aan4jnlmderrazr5xrgnwz72ecdtqrswdnfk8"> Creador</a>
+    <button class="tool-btn" id="supportBtn"> Support</button>
+    <button class="tool-btn" id="donateBtn"> Donate</button>
   </nav>
 
   <div class="compat-note hidden" id="compatNote">
@@ -73,7 +65,7 @@
       </label>
 
       <div class="login-options">
-        <button class="btn primary wide" id="btnCreateIdentity">✨ Crear identidad nueva</button>
+        <button class="btn primary wide" id="btnCreateIdentity"> Crear identidad nueva</button>
 
         <div class="divider">o importa una clave existente</div>
 
@@ -150,17 +142,6 @@
     </div>
   </dialog>
 
-  <dialog class="dialog" id="joinDialog">
-    <div class="dialog-body">
-      <h2>📲 Crea tu blog</h2>
-      <p class="dialog-sub" id="joinText">Instala la app en tu teléfono y ten tu blog siempre a mano: se publica en Nostr, funciona sin internet y se actualiza sola.</p>
-
-      <button class="btn primary wide" id="joinInstallBtn">📲 Instalar la app</button>
-      <button class="btn ghost wide" id="joinSkipBtn">Continuar sin instalar →</button>
-      <p class="fine-print center hidden" id="joinIosNote">En iPhone: comparte esta página → "Agregar a inicio". En TikTok: usa ⋮ → "Abrir en navegador".</p>
-    </div>
-  </dialog>
-
   <dialog class="dialog" id="supportDialog">
     <div class="dialog-body">
       <h2>🤝 Support</h2>
@@ -211,8 +192,8 @@
       <h2 id="cardDialogTitle">Nueva caja</h2>
 
       <div class="tabs" id="typeTabs">
-        <button type="button" data-type="thought" class="tab active">💭 Pensamiento</button>
-        <button type="button" data-type="image" class="tab">🖼️ Imagen</button>
+        <button type="button" data-type="thought" class="tab active"> Pensamiento</button>
+        <button type="button" data-type="image" class="tab"> Imagen</button>
       </div>
 
       <label class="field" id="imageFields">
@@ -240,13 +221,30 @@
     </div>
   </dialog>
 
+  <dialog class="dialog" id="avatarDialog">
+    <div class="dialog-body">
+      <h2>Avatar</h2>
+
+      <div class="field">
+        <span>Elige un icono</span>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
+
+      <label class="field">
+        <span>O sube tu foto (→ Blossom)</span>
+        <input type="file" id="avatarFileInput" accept="image/*">
+        <span class="upload-status" id="avatarUploadStatus"></span>
+      </label>
+
+      <menu class="dialog-menu">
+        <button type="button" class="btn ghost dlg-cancel">Cancelar</button>
+        <button type="button" id="avatarConfirmBtn" class="btn primary">Guardar</button>
+      </menu>
+    </div>
+  </dialog>
+
   <div id="toasts"></div>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
-    }
-  </script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

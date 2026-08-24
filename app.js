@@ -140,10 +140,10 @@ function applyChrome() {
 
   creatorBtn.classList.toggle('hidden', !identity);
   if (visitingOther) {
-    creatorBtn.textContent = '↩️ Volver';
+    creatorBtn.textContent = '↩ Volver';
     creatorBtn.removeAttribute('href');
   } else {
-    creatorBtn.textContent = '👑 Creador';
+    creatorBtn.textContent = ' Creador';
     creatorBtn.setAttribute('href', FEATURED_URL);
   }
 
@@ -184,9 +184,9 @@ function buildCard(card) {
 
   const controls = document.createElement('div');
   controls.className = 'controls';
-  controls.appendChild(iconBtn(SIZE_ICONS[card.size] || '▫️', 'Cambiar tamaño', () => cycleSize(card)));
-  controls.appendChild(iconBtn('✏️', 'Editar', () => openCardDialog(card)));
-  controls.appendChild(iconBtn('🗑️', 'Eliminar', () => removeCard(card.id)));
+  controls.appendChild(iconBtn(SIZE_ICONS[card.size] || '', 'Cambiar tamaño', () => cycleSize(card)));
+  controls.appendChild(iconBtn('', 'Editar', () => openCardDialog(card)));
+  controls.appendChild(iconBtn('', 'Eliminar', () => removeCard(card.id)));
   el.appendChild(controls);
 
   if (card.type === 'thought') {
@@ -318,14 +318,14 @@ function startBlogSubscription(pubkeyHex) {
 
 function toggleEdit() {
   const editing = document.body.classList.toggle('editing');
-  $('#editModeBtn').textContent = editing ? '✅ Listo' : '✏️ Editar';
+  $('#editModeBtn').textContent = editing ? ' Listo' : 'Editar';
   if (editing) {
     usernameEl.setAttribute('contenteditable', 'true');
-    toast('✏️ Modo edición activado — pulsa ✅ Listo para salir');
+    toast('✏️ Modo edición activado — pulsa  Listo para salir');
     usernameEl.focus();
   } else {
     usernameEl.removeAttribute('contenteditable');
-    toast('Modo edición cerrado. Tus cambios ya se están publicando ☁️');
+    toast('Modo edición cerrado. Tus cambios ya se están publicando ');
   }
 }
 
@@ -426,7 +426,7 @@ async function uploadToBlossom(file, statusEl) {
       statusEl.textContent = msg;
     });
     statusEl.textContent = '';
-    toast('Imagen subida ✅');
+    toast('Imagen subida ');
     return url;
   } catch (err) {
     statusEl.textContent = '';
@@ -464,7 +464,7 @@ $('#saveCardBtn').addEventListener('click', () => {
     return;
   }
   if (dialogType === 'thought' && !text) {
-    toast('Escribe algo primero 🙂', 'err');
+    toast('Escribe algo primero ', 'err');
     return;
   }
 
@@ -507,9 +507,9 @@ function openKeyGuard(nsec, onDone) {
       clearInterval(keyGuardDialog.timer);
       keyGuardDialog.timer = null;
       btn.disabled = false;
-      btn.textContent = '✅ Ya la copié y guardé';
+      btn.textContent = ' Ya la copié y guardé';
     } else {
-      btn.textContent = `⏳ Continuar (${left} s)`;
+      btn.textContent = ` Continuar (${left} s)`;
     }
   }, 1000);
 
@@ -770,13 +770,13 @@ $('#btnCreateIdentity').addEventListener('click', async () => {
     state.username = name || state.username;
     state._pub = identity.pub;
     persistCache();
-    toast('Identidad creada 🎉');
+    toast('Identidad creada ');
     openKeyGuard(await toNsec(identity), () => goOwnProfile(identity.pub));
   } catch (err) {
     toast('No se pudo crear la identidad: ' + err.message, 'err');
   } finally {
     btn.disabled = false;
-    btn.textContent = '✨ Crear identidad nueva';
+    btn.textContent = ' Crear identidad nueva';
   }
 });
 
@@ -804,7 +804,7 @@ async function doImportNsec() {
 
   const origText = '🔑 Iniciar sesión con nsec';
   btn.disabled = true;
-  btn.textContent = '⏳ Verificando clave…';
+  btn.textContent = ' Verificando clave…';
   try {
     identity = await importIdentity(nsec, $('#loginNameInput').value.trim());
     saveIdentity(identity);
@@ -829,7 +829,7 @@ $('#nsecInput').addEventListener('keydown', (e) => {
 $('#eyeBtn').addEventListener('click', () => {
   const input = $('#nsecInput');
   input.type = input.type === 'password' ? 'text' : 'password';
-  $('#eyeBtn').textContent = input.type === 'password' ? '👁️' : '🙈';
+  $('#eyeBtn').textContent = input.type === 'password' ? '' : '';
 });
 
 $('#btnExtension').addEventListener('click', async () => {
@@ -860,7 +860,7 @@ async function afterLogin() {
       const remoteAt = Number(remote.updated_at || 0);
       if (!cached || remoteAt >= localAt) {
         state = { ...defaultState(), ...remote };
-        toast('Blog cargado desde Nostr ☁️');
+        toast('Blog cargado desde Nostr ');
       }
     } else if (!cached && state.cards.length === 0) {
       state = demoState();
@@ -942,7 +942,7 @@ async function boot() {
   if (identity && viewerKey && viewerKey === identity.pub) {
     viewerKey = null;
     history.replaceState({}, '', location.pathname);
-    toast('👋 Bienvenido de nuevo, dueño de este blog');
+    toast(' Bienvenido de nuevo, dueño de este blog');
     await afterLogin();
     return;
   }
