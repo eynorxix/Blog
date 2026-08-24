@@ -207,3 +207,32 @@ export async function fetchBlogState(pubkeyHex) {
     return null;
   }
 }
+
+export async function subscribeBlogState(pubkeyHex, onState) {
+  const { lib, pool } = await getPool();
+  let lastSeen = 0;
+  return pool.subscribeMany(
+    RELAYS,
+    [{ kinds: [BLOG_KIND], authors: [pubkeyHex], '#d': [BLOG_DTAG] }],
+    {
+      onevent: (ev) => {
+        try {
+          if (!lib.verifyEvent(ev)) return;
+        } catch (err) {
+          return;
+        }
+        if (ev.created_at <= lastSeen) return;
+        lastSeen = ev.created_at;
+        let data;
+        try {
+          data = JSON.parse(ev.content);
+          if (!Array.isArray(data.cards)) return;
+        } catch (err) {
+          return;
+        }
+        onState(data, ev.created_at);
+      },
+      maxWait: 8000,
+    }
+  );
+}

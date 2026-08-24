@@ -11,11 +11,37 @@ import {
   fromNpub,
 } from './js/keys.js';
 import { uploadBlob } from './js/blossom.js';
-import { publishBlogState, fetchBlogState, signWithIdentity, fetchLatestUserVote, subscribeUserVote } from './js/nostr.js';
+import { publishBlogState, fetchBlogState, subscribeBlogState, signWithIdentity, fetchLatestUserVote, subscribeUserVote } from './js/nostr.js';
 import { initRadar, UNIVERSES } from './js/radar.js';
 import { nativeDialog, openDlg, closeDlg } from './js/compat.js';
 
-const CACHE_KEY = 'bento_blog_cache_v2';
+const LEGACY_CACHE_KEY = 'bento_blog_cache_v2';
+const LAST_PUB_KEY = 'bento_last_pub';
+
+function cacheKeyFor(pub) {
+  return 'bento_state_' + String(pub || '').slice(0, 16);
+}
+
+function loadCacheFor(pub) {
+  try {
+    const raw = localStorage.getItem(cacheKeyFor(pub));
+    if (raw) return JSON.parse(raw);
+    const legacy = localStorage.getItem(LEGACY_CACHE_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy);
+      if (parsed && parsed._pub === pub) return parsed;
+    }
+  } catch (err) {}
+  return null;
+}
+
+function persistCache() {
+  if (!state._pub) return;
+  try {
+    localStorage.setItem(cacheKeyFor(state._pub), JSON.stringify(state));
+    localStorage.setItem(LAST_PUB_KEY, state._pub);
+  } catch (err) {}
+}
 
 const COLORS = ['#7c5cff', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
 
@@ -51,19 +77,7 @@ function demoState() {
   };
 }
 
-let state = loadCache() || demoState();
-
-function loadCache() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (err) {}
-  return null;
-}
-
-function persistCache() {
-  localStorage.setItem(CACHE_KEY, JSON.stringify(state));
-}
+let state = demoState();
 
 const $ = (sel) => document.querySelector(sel);
 const usernameEl = $('#username');
@@ -175,12 +189,23 @@ function cycleSize(card) {
   const i = SIZES.indexOf(card.size || 'sm');
   card.size = SIZES[(i + 1) % SIZES.length];
   commit();
+  renderCards();
 }
 
 function removeCard(id) {
-  if (!confirm('¿Eliminar esta caja?')) return;
-  state.cards = state.cards.filter((c) => c.id !== id);
-  commit();
+  const el = bento.querySelector(`.card[data-id="${id}"]`);
+  const doRemove = () => {
+    state.cards = state.cards.filter((c) => c.id !== id);
+    commit();
+    renderCards();
+    toast('🗑️ Caja eliminada');
+  };
+  if (el) {
+    el.classList.add('removing');
+    setTimeout(doRemove, 170);
+  } else {
+    doRemove();
+  }
 }
 
 function commit() {
@@ -193,6 +218,8 @@ function commit() {
 }
 
 let publishTimer = null;
+let lastPublishAt = 0;
+let publishedJson = '';
 
 function schedulePublish() {
   if (!identity || viewerKey) return;
@@ -205,6 +232,8 @@ async function doPublish() {
   try {
     const okCount = await publishBlogState(identity, state);
     if (okCount > 0) {
+      lastPublishAt = Date.now();
+      publishedJson = JSON.stringify({ ...state, _pub: undefined });
       setSyncStatus('ok');
     } else {
       setSyncStatus('err');
@@ -214,6 +243,41 @@ async function doPublish() {
     setSyncStatus('err');
     toast('Error al publicar: ' + err.message, 'err');
   }
+}
+
+function applyRemoteState(remote, evAt) {
+  if (viewerKey) {
+    state = { ...defaultState(), ...remote };
+    renderAll();
+    return;
+  }
+  if (identity && remote.pubkey && remote.pubkey !== identity.pub) return;
+
+  const localAt = Number(state.updated_at || 0);
+  if (evAt && localAt && evAt < localAt) return;
+
+  const incomingJson = JSON.stringify({ ...remote, _pub: undefined });
+  if (Date.now() - lastPublishAt < 6000 && incomingJson === publishedJson) return;
+
+  delete remote._pub;
+  state = { ...defaultState(), ...remote };
+  state._pub = identity ? identity.pub : viewerKey;
+  persistCache();
+  renderAll();
+  toast('🔄 Sincronizado desde Nostr');
+}
+
+let blogSub = null;
+
+function startBlogSubscription(pubkeyHex) {
+  if (blogSub && blogSub.close) blogSub.close();
+  blogSub = null;
+  subscribeBlogState(pubkeyHex, (data, evAt) => {
+    data.pubkey = pubkeyHex;
+    applyRemoteState(data, evAt);
+  }).then((sub) => {
+    blogSub = sub;
+  }).catch(() => {});
 }
 
 let editUnlocked = false;
@@ -414,11 +478,11 @@ $('#saveCardBtn').addEventListener('click', () => {
   const img = pendingImgData;
 
   if (dialogType === 'image' && !img) {
-    alert('Agrega una imagen (URL o archivo).');
+    toast('Agrega una imagen (URL o archivo)', 'err');
     return;
   }
   if (dialogType === 'thought' && !text) {
-    alert('Escribe algo primero 🙂');
+    toast('Escribe algo primero 🙂', 'err');
     return;
   }
 
@@ -622,11 +686,18 @@ document.querySelectorAll('.dlg-cancel').forEach((btn) => {
 
 document.querySelectorAll('a[data-ext]').forEach((a) => {
   a.addEventListener('click', (e) => {
+    if (!a.hasAttribute('data-ext')) return;
     e.preventDefault();
     const url = a.href;
     const w = window.open(url, '_blank', 'noopener');
     if (!w) location.href = url;
   });
+});
+
+$('#creatorBtn').addEventListener('click', (e) => {
+  if (!document.body.classList.contains('viewer')) return;
+  e.preventDefault();
+  location.href = location.origin + location.pathname;
 });
 
 document.querySelectorAll('.copy-addr').forEach((btn) => {
@@ -687,8 +758,22 @@ $('#copyNsecBtn').addEventListener('click', async () => {
   copyText(await toNsec(identity), 'nsec');
 });
 
+let logoutArmed = false;
+let logoutTimer = null;
+
 $('#logoutBtn').addEventListener('click', () => {
-  if (!confirm('¿Cerrar sesión? Tu blog seguirá publicado en Nostr, pero necesitarás tu nsec para volver a entrar desde este dispositivo.')) return;
+  const btn = $('#logoutBtn');
+  if (!logoutArmed) {
+    logoutArmed = true;
+    btn.textContent = '¿Seguro? Pulsa otra vez';
+    clearTimeout(logoutTimer);
+    logoutTimer = setTimeout(() => {
+      logoutArmed = false;
+      btn.textContent = 'Cerrar sesión';
+    }, 3500);
+    return;
+  }
+  clearTimeout(logoutTimer);
   clearIdentity();
   location.href = location.pathname;
 });
@@ -727,15 +812,13 @@ function setLoginError(msg) {
 
 async function doImportNsec() {
   const btn = $('#btnImportNsec');
-  let nsec = $('#nsecInput').value.trim();
+  const nsec = $('#nsecInput').value.trim();
   setLoginError('');
 
   if (!nsec) {
-    const typed = window.prompt('Pega tu clave nsec para entrar:');
-    if (!typed) return;
-    nsec = typed.trim();
-    if (!nsec) return;
-    $('#nsecInput').value = nsec;
+    setLoginError('⚠️ Pega tu clave nsec en el campo de arriba');
+    $('#nsecInput').focus();
+    return;
   }
 
   const origText = '🔑 Iniciar sesión con nsec';
@@ -785,21 +868,34 @@ $('#btnExtension').addEventListener('click', async () => {
 async function afterLogin() {
   applyIdentity();
   setSyncStatus('syncing');
+
+  const cached = loadCacheFor(identity.pub);
+  if (cached) {
+    state = { ...defaultState(), ...cached };
+    renderAll();
+  }
+
   try {
     const remote = await fetchBlogState(identity.pub);
     if (remote) {
-      state = { ...defaultState(), ...remote };
-      toast('Blog cargado desde Nostr ☁️');
-    } else if (state._pub && state._pub !== identity.pub) {
+      const localAt = Number(state.updated_at || 0);
+      const remoteAt = Number(remote.updated_at || 0);
+      if (!cached || remoteAt >= localAt) {
+        state = { ...defaultState(), ...remote };
+        toast('Blog cargado desde Nostr ☁️');
+      }
+    } else if (!cached && state.cards.length === 0) {
       state = demoState();
     }
     state._pub = identity.pub;
     persistCache();
     renderAll();
     setSyncStatus('ok');
+    startBlogSubscription(identity.pub);
     trackUserVote(identity.pub);
   } catch (err) {
     setSyncStatus('err');
+    startBlogSubscription(identity.pub);
   }
 }
 
@@ -820,18 +916,32 @@ async function enterViewerMode(pubkeyHex) {
   $('#accountBtn').style.display = 'none';
   $('#editModeBtn').style.display = 'none';
 
+  const cb = $('#creatorBtn');
+  cb.removeAttribute('data-ext');
+  cb.textContent = '↩️ Volver';
+  cb.href = location.origin + location.pathname;
+
+  const cached = loadCacheFor(pubkeyHex);
+  if (cached) {
+    state = { ...defaultState(), ...cached };
+    renderAll();
+  }
+
   try {
     const remote = await fetchBlogState(pubkeyHex);
     if (remote) {
       state = { ...defaultState(), ...remote };
-      renderAll();
-      $('#viewerText').textContent = `👀 Viendo el blog de ${state.username}`;
-    } else {
-      $('#viewerText').textContent = '👀 Este blog está vacío o no existe aún';
+      state._pub = pubkeyHex;
+      persistCache();
+    } else if (!cached) {
+      state = demoState();
     }
+    renderAll();
+    startBlogSubscription(pubkeyHex);
     trackUserVote(pubkeyHex);
   } catch (err) {
-    $('#viewerText').textContent = '👀 Sin conexión a los relays';
+    if (!cached) renderAll();
+    toast('Sin conexión a los relays', 'err');
   }
 }
 
@@ -867,6 +977,14 @@ async function boot() {
   }
 
   if (!identity) {
+    const lastPub = localStorage.getItem(LAST_PUB_KEY);
+    const lastCached = lastPub ? loadCacheFor(lastPub) : null;
+    if (lastCached && Array.isArray(lastCached.cards) && lastCached.cards.length) {
+      state = { ...defaultState(), ...lastCached };
+      state._pub = lastPub;
+      renderAll();
+      toast('👀 Vista local — inicia sesión para editar');
+    }
     openDlg(loginDialog);
     setSyncStatus('idle');
   } else {
