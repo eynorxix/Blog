@@ -26,12 +26,6 @@
     </div>
   </div>
 
-  <div class="viewer-bar hidden" id="viewerBar">
-    <span class="viewer-text" id="viewerText">Viendo un blog</span>
-    <button class="btn sm primary" id="createOwnBtn">Crear mi blog</button>
-    <button class="btn sm ghost viewer-close" id="closeViewerBtn" title="Ocultar">✕</button>
-  </div>
-
   <nav class="toolbar">
     <a class="tool-btn creator" data-ext href="https://eynorxix.github.io/Blog/?u=npub1survd7dr0z582gu6kkh4fxl6rwj3fzq3vcgu2fq46kj6t2253s7qdmpn9a">👑 Creador</a>
     <button class="tool-btn" id="supportBtn">🤝 Support</button>
@@ -75,8 +69,12 @@
 
         <div class="divider">o importa una clave existente</div>
 
-        <input type="password" id="nsecInput" class="nsec-input" placeholder="nsec1…" autocomplete="off">
+        <div class="nsec-row">
+          <input type="password" id="nsecInput" class="nsec-input" placeholder="nsec1…" autocomplete="off" spellcheck="false" autocapitalize="none" enterkeyhint="go">
+          <button type="button" class="btn ghost sm eye-btn" id="eyeBtn" title="Mostrar u ocultar">👁️</button>
+        </div>
         <button class="btn ghost wide" id="btnImportNsec">🔑 Iniciar sesión con nsec</button>
+        <p class="field-error hidden" id="loginError"></p>
 
         <button class="btn ghost wide hidden" id="btnExtension">🦊 Usar extensión (Alby/nos2x)</button>
       </div>

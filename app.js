@@ -714,11 +714,33 @@ $('#btnCreateIdentity').addEventListener('click', async () => {
   }
 });
 
-$('#btnImportNsec').addEventListener('click', async () => {
-  const nsec = $('#nsecInput').value.trim();
-  if (!nsec) return;
+function setLoginError(msg) {
+  const err = $('#loginError');
+  if (msg) {
+    err.textContent = msg;
+    err.classList.remove('hidden');
+  } else {
+    err.textContent = '';
+    err.classList.add('hidden');
+  }
+}
+
+async function doImportNsec() {
   const btn = $('#btnImportNsec');
+  let nsec = $('#nsecInput').value.trim();
+  setLoginError('');
+
+  if (!nsec) {
+    const typed = window.prompt('Pega tu clave nsec para entrar:');
+    if (!typed) return;
+    nsec = typed.trim();
+    if (!nsec) return;
+    $('#nsecInput').value = nsec;
+  }
+
+  const origText = '🔑 Iniciar sesión con nsec';
   btn.disabled = true;
+  btn.textContent = '⏳ Verificando clave…';
   try {
     identity = await importIdentity(nsec, $('#loginNameInput').value.trim());
     saveIdentity(identity);
@@ -727,10 +749,25 @@ $('#btnImportNsec').addEventListener('click', async () => {
     toast('Sesión iniciada 🔑');
     await afterLogin();
   } catch (err) {
-    toast('No se pudo importar: ' + err.message, 'err');
+    const msg = (err && err.message) || 'clave inválida';
+    setLoginError('⚠️ ' + msg);
+    toast('No se pudo iniciar sesión: ' + msg, 'err');
   } finally {
     btn.disabled = false;
+    btn.textContent = origText;
   }
+}
+
+$('#btnImportNsec').addEventListener('click', doImportNsec);
+
+$('#nsecInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doImportNsec();
+});
+
+$('#eyeBtn').addEventListener('click', () => {
+  const input = $('#nsecInput');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  $('#eyeBtn').textContent = input.type === 'password' ? '👁️' : '🙈';
 });
 
 $('#btnExtension').addEventListener('click', async () => {
@@ -782,17 +819,6 @@ async function enterViewerMode(pubkeyHex) {
   syncStatusEl.style.display = 'none';
   $('#accountBtn').style.display = 'none';
   $('#editModeBtn').style.display = 'none';
-  $('#viewerBar').classList.remove('hidden');
-
-  const dismiss = () => {
-    $('#viewerBar').classList.add('hidden');
-    history.replaceState({}, '', location.pathname);
-  };
-  $('#closeViewerBtn').addEventListener('click', dismiss);
-  $('#createOwnBtn').addEventListener('click', () => {
-    history.replaceState({}, '', location.pathname);
-    location.reload();
-  });
 
   try {
     const remote = await fetchBlogState(pubkeyHex);
