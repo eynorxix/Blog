@@ -80,6 +80,10 @@ function demoState() {
 let state = demoState();
 
 const $ = (sel) => document.querySelector(sel);
+function bind(target, ev, fn) {
+  const el = typeof target === 'string' ? $(target) : target;
+  if (el) el.addEventListener(ev, fn);
+}
 const usernameEl = $('#username');
 const bento = $('#bento');
 const addCardBtn = $('#addCardBtn');
@@ -329,7 +333,7 @@ function toggleEdit() {
   }
 }
 
-$('#editModeBtn').addEventListener('click', (e) => {
+bind('#editModeBtn', 'click', (e) => {
   if (!identity) {
     openDlg(loginDialog);
     return;
@@ -337,11 +341,11 @@ $('#editModeBtn').addEventListener('click', (e) => {
   toggleEdit();
 });
 
-usernameEl.addEventListener('beforeinput', (e) => {
+bind(usernameEl, 'beforeinput', (e) => {
   if (document.body.classList.contains('editing') === false) e.preventDefault();
 });
 
-usernameEl.addEventListener('input', () => {
+bind(usernameEl, 'input', () => {
   state.username = usernameEl.textContent.trim().slice(0, 40) || 'sin_nombre';
   document.title = `${state.username} · blog`;
   commit();
@@ -435,7 +439,7 @@ async function uploadToBlossom(file, statusEl) {
   }
 }
 
-$('#imgUrlInput').addEventListener('input', (e) => {
+bind('#imgUrlInput', 'input', (e) => {
   const url = e.target.value.trim();
   if (url) {
     pendingImgData = url;
@@ -444,7 +448,7 @@ $('#imgUrlInput').addEventListener('input', (e) => {
   }
 });
 
-$('#imgFileInput').addEventListener('change', async (e) => {
+bind('#imgFileInput', 'change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const url = await uploadToBlossom(file, $('#uploadStatus'));
@@ -455,7 +459,7 @@ $('#imgFileInput').addEventListener('change', async (e) => {
   }
 });
 
-$('#saveCardBtn').addEventListener('click', () => {
+bind('#saveCardBtn', 'click', () => {
   const text = $('#cardText').value.trim();
   const img = pendingImgData;
 
@@ -516,13 +520,13 @@ function openKeyGuard(nsec, onDone) {
   openDlg(keyGuardDialog);
 }
 
-keyGuardDialog.addEventListener('cancel', (e) => {
+bind(keyGuardDialog, 'cancel', (e) => {
   if (!kgAllowClose) e.preventDefault();
 });
 
-$('#kgCopyBtn').addEventListener('click', () => copyText($('#kgNsec').textContent, 'nsec'));
+bind('#kgCopyBtn', 'click', () => copyText($('#kgNsec').textContent, 'nsec'));
 
-$('#kgContinueBtn').addEventListener('click', () => {
+bind('#kgContinueBtn', 'click', () => {
   const btn = $('#kgContinueBtn');
   if (btn.disabled) return;
   if (keyGuardDialog.timer) {
@@ -599,8 +603,8 @@ async function trackUserVote(pubkeyHex) {
   });
 }
 
-$('#supportBtn').addEventListener('click', () => openDlg($('#supportDialog')));
-$('#donateBtn').addEventListener('click', () => openDlg($('#donateDialog')));
+bind('#supportBtn', 'click', () => openDlg($('#supportDialog')));
+bind('#donateBtn', 'click', () => openDlg($('#donateDialog')));
 
 document.querySelectorAll('[data-close]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -626,7 +630,7 @@ document.querySelectorAll('a[data-ext]').forEach((a) => {
   });
 });
 
-$('#creatorBtn').addEventListener('click', (e) => {
+bind('#creatorBtn', 'click', (e) => {
   if (identity && viewerKey) {
     e.preventDefault();
     location.href = location.origin + location.pathname;
@@ -635,7 +639,7 @@ $('#creatorBtn').addEventListener('click', (e) => {
   if (!identity) e.preventDefault();
 });
 
-$('#accountChip').addEventListener('click', () => {
+bind('#accountChip', 'click', () => {
   if (identity) {
     openDlg(accountDialog);
     return;
@@ -653,7 +657,7 @@ $('#accountChip').addEventListener('click', () => {
   openDlg($('#joinDialog'));
 });
 
-$('#joinInstallBtn').addEventListener('click', async () => {
+bind('#joinInstallBtn', 'click', async () => {
   if (!deferredInstallPrompt) {
     closeDlg($('#joinDialog'));
     openDlg(loginDialog);
@@ -676,7 +680,7 @@ $('#joinInstallBtn').addEventListener('click', async () => {
   deferredInstallPrompt = null;
 });
 
-$('#joinSkipBtn').addEventListener('click', () => {
+bind('#joinSkipBtn', 'click', () => {
   closeDlg($('#joinDialog'));
   openDlg(loginDialog);
 });
@@ -685,7 +689,7 @@ document.querySelectorAll('.copy-addr').forEach((btn) => {
   btn.addEventListener('click', () => copyText(btn.parentElement.querySelector('input').value, 'Dirección'));
 });
 
-$('#voteCtaBtn').addEventListener('click', () => {
+bind('#voteCtaBtn', 'click', () => {
   if (!identity) {
     openDlg(loginDialog);
     toast('Crea tu cuenta para votar con tu identidad', 'warn');
@@ -710,7 +714,7 @@ accountDialog.addEventListener('close', () => {
   out.type = 'password';
 });
 
-$('#accountBtn').addEventListener('click', async () => {
+bind('#accountBtn', 'click', async () => {
   if (!identity) {
     openDlg(loginDialog);
     return;
@@ -719,10 +723,10 @@ $('#accountBtn').addEventListener('click', async () => {
   openDlg(accountDialog);
 });
 
-$('#copyNpubBtn').addEventListener('click', () => copyText($('#npubOutput').value, 'npub'));
-$('#copyLinkBtn').addEventListener('click', () => copyText($('#shareLink').value, 'Enlace'));
+bind('#copyNpubBtn', 'click', () => copyText($('#npubOutput').value, 'npub'));
+bind('#copyLinkBtn', 'click', () => copyText($('#shareLink').value, 'Enlace'));
 
-$('#revealNsecBtn').addEventListener('click', async () => {
+bind('#revealNsecBtn', 'click', async () => {
   const out = $('#nsecOutput');
   if (out.type === 'password') {
     out.value = await toNsec(identity);
@@ -735,14 +739,14 @@ $('#revealNsecBtn').addEventListener('click', async () => {
   }
 });
 
-$('#copyNsecBtn').addEventListener('click', async () => {
+bind('#copyNsecBtn', 'click', async () => {
   copyText(await toNsec(identity), 'nsec');
 });
 
 let logoutArmed = false;
 let logoutTimer = null;
 
-$('#logoutBtn').addEventListener('click', () => {
+bind('#logoutBtn', 'click', () => {
   const btn = $('#logoutBtn');
   if (!logoutArmed) {
     logoutArmed = true;
@@ -759,7 +763,7 @@ $('#logoutBtn').addEventListener('click', () => {
   location.href = location.pathname;
 });
 
-$('#btnCreateIdentity').addEventListener('click', async () => {
+bind('#btnCreateIdentity', 'click', async () => {
   const btn = $('#btnCreateIdentity');
   const name = $('#loginNameInput').value.trim();
   btn.disabled = true;
@@ -820,19 +824,19 @@ async function doImportNsec() {
   }
 }
 
-$('#btnImportNsec').addEventListener('click', doImportNsec);
+bind('#btnImportNsec', 'click', doImportNsec);
 
-$('#nsecInput').addEventListener('keydown', (e) => {
+bind('#nsecInput', 'keydown', (e) => {
   if (e.key === 'Enter') doImportNsec();
 });
 
-$('#eyeBtn').addEventListener('click', () => {
+bind('#eyeBtn', 'click', () => {
   const input = $('#nsecInput');
   input.type = input.type === 'password' ? 'text' : 'password';
   $('#eyeBtn').textContent = input.type === 'password' ? '' : '';
 });
 
-$('#btnExtension').addEventListener('click', async () => {
+bind('#btnExtension', 'click', async () => {
   try {
     identity = await extensionIdentity();
     saveIdentity(identity);
