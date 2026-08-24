@@ -17,6 +17,7 @@ import { nativeDialog, openDlg, closeDlg } from './js/compat.js';
 
 const LEGACY_CACHE_KEY = 'bento_blog_cache_v2';
 const LAST_PUB_KEY = 'bento_last_pub';
+const FEATURED_NPUB = 'npub1gre2q6mnpfg9mjculusl2m8ue93a0xef9rx398e8a4nalqe4y24s9xezm8';
 
 function cacheKeyFor(pub) {
   return 'bento_state_' + String(pub || '').slice(0, 16);
@@ -122,6 +123,23 @@ function applyIdentity() {
     avatarBtn.style.backgroundImage = '';
     avatarBtn.textContent = state.avatar || '🙂';
   }
+  applyChrome();
+}
+
+function applyChrome() {
+  const chip = $('#accountChip');
+  chip.textContent = identity ? 'Perfil' : 'Registrarse';
+  const creatorBtn = $('#creatorBtn');
+  creatorBtn.classList.toggle('hidden', !(identity && !viewerKey));
+}
+
+async function goOwnProfile(pubHex) {
+  let url = location.origin + location.pathname;
+  try {
+    const npub = await toNpub(pubHex);
+    if (npub) url += '?u=' + npub;
+  } catch (err) {}
+  location.href = url;
 }
 
 function renderCards() {
@@ -280,8 +298,6 @@ function startBlogSubscription(pubkeyHex) {
   }).catch(() => {});
 }
 
-let editUnlocked = false;
-
 function toggleEdit() {
   const editing = document.body.classList.toggle('editing');
   $('#editModeBtn').textContent = editing ? '✅ Listo' : '✏️ Editar';
@@ -300,59 +316,7 @@ $('#editModeBtn').addEventListener('click', (e) => {
     openDlg(loginDialog);
     return;
   }
-  if (identity.type === 'extension') {
-    toggleEdit();
-    return;
-  }
-  if (!editUnlocked) {
-    openEditGate();
-    return;
-  }
   toggleEdit();
-});
-
-const editGateDialog = $('#editGateDialog');
-
-function openEditGate() {
-  $('#egNsecInput').value = '';
-  const err = $('#egError');
-  err.textContent = '';
-  err.classList.add('hidden');
-  openDlg(editGateDialog);
-  setTimeout(() => $('#egNsecInput').focus(), 50);
-}
-
-async function confirmEditGate() {
-  const val = $('#egNsecInput').value.trim();
-  const err = $('#egError');
-  err.textContent = '';
-  err.classList.add('hidden');
-
-  if (!val) {
-    err.textContent = 'Pega tu clave nsec para continuar.';
-    err.classList.remove('hidden');
-    return;
-  }
-
-  try {
-    const test = await importIdentity(val);
-    if (test.pub !== identity.pub) {
-      err.textContent = 'Esa clave no corresponde a este blog. Revisa que sea tu nsec.';
-      err.classList.remove('hidden');
-      return;
-    }
-    editUnlocked = true;
-    closeDlg(editGateDialog);
-    toggleEdit();
-  } catch (err2) {
-    err.textContent = 'nsec inválido: ' + err2.message;
-    err.classList.remove('hidden');
-  }
-}
-
-$('#egConfirmBtn').addEventListener('click', confirmEditGate);
-$('#egNsecInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') confirmEditGate();
 });
 
 usernameEl.addEventListener('beforeinput', (e) => {
@@ -565,8 +529,9 @@ $('#avatarConfirmBtn').addEventListener('click', () => {
 
 let kgAllowClose = false;
 
-function openKeyGuard(nsec) {
+function openKeyGuard(nsec, onDone) {
   kgAllowClose = false;
+  keyGuardDialog.onDone = onDone || null;
   $('#kgNsec').textContent = nsec;
   const btn = $('#kgContinueBtn');
   let left = 10;
@@ -604,6 +569,11 @@ $('#kgContinueBtn').addEventListener('click', () => {
   }
   kgAllowClose = true;
   closeDlg(keyGuardDialog);
+  if (keyGuardDialog.onDone) {
+    const cb = keyGuardDialog.onDone;
+    keyGuardDialog.onDone = null;
+    cb();
+  }
 });
 
 function legacyCopy(text) {
@@ -695,9 +665,16 @@ document.querySelectorAll('a[data-ext]').forEach((a) => {
 });
 
 $('#creatorBtn').addEventListener('click', (e) => {
-  if (!document.body.classList.contains('viewer')) return;
+  if (identity && !viewerKey) return;
   e.preventDefault();
-  location.href = location.origin + location.pathname;
+});
+
+$('#accountChip').addEventListener('click', () => {
+  if (!identity) {
+    openDlg(loginDialog);
+    return;
+  }
+  openDlg(accountDialog);
 });
 
 document.querySelectorAll('.copy-addr').forEach((btn) => {
@@ -787,10 +764,10 @@ $('#btnCreateIdentity').addEventListener('click', async () => {
     identity = await createIdentity(name);
     saveIdentity(identity);
     state.username = name || state.username;
-    closeDlg(loginDialog);
+    state._pub = identity.pub;
+    persistCache();
     toast('Identidad creada 🎉');
-    await afterLogin();
-    openKeyGuard(await toNsec(identity));
+    openKeyGuard(await toNsec(identity), () => goOwnProfile(identity.pub));
   } catch (err) {
     toast('No se pudo crear la identidad: ' + err.message, 'err');
   } finally {
@@ -827,10 +804,8 @@ async function doImportNsec() {
   try {
     identity = await importIdentity(nsec, $('#loginNameInput').value.trim());
     saveIdentity(identity);
-    $('#nsecInput').value = '';
-    closeDlg(loginDialog);
     toast('Sesión iniciada 🔑');
-    await afterLogin();
+    goOwnProfile(identity.pub);
   } catch (err) {
     const msg = (err && err.message) || 'clave inválida';
     setLoginError('⚠️ ' + msg);
@@ -857,9 +832,8 @@ $('#btnExtension').addEventListener('click', async () => {
   try {
     identity = await extensionIdentity();
     saveIdentity(identity);
-    closeDlg(loginDialog);
     toast('Conectado con extensión 🦊');
-    await afterLogin();
+    goOwnProfile(identity.pub);
   } catch (err) {
     toast('No se pudo conectar con la extensión', 'err');
   }
@@ -910,16 +884,13 @@ async function resolveViewerKey() {
   }
 }
 
-async function enterViewerMode(pubkeyHex) {
+async function enterViewerMode(pubkeyHex, isGuest = false) {
   document.body.classList.add('viewer');
+  if (isGuest) document.body.classList.add('guest');
   syncStatusEl.style.display = 'none';
   $('#accountBtn').style.display = 'none';
   $('#editModeBtn').style.display = 'none';
-
-  const cb = $('#creatorBtn');
-  cb.removeAttribute('data-ext');
-  cb.textContent = '↩️ Volver';
-  cb.href = location.origin + location.pathname;
+  $('#creatorBtn').classList.add('hidden');
 
   const cached = loadCacheFor(pubkeyHex);
   if (cached) {
@@ -962,8 +933,9 @@ async function boot() {
 
   viewerKey = await resolveViewerKey();
   identity = loadIdentity();
+  applyChrome();
 
-  if (viewerKey && identity && identity.pub === viewerKey) {
+  if (identity && viewerKey && viewerKey === identity.pub) {
     viewerKey = null;
     history.replaceState({}, '', location.pathname);
     toast('👋 Bienvenido de nuevo, dueño de este blog');
@@ -972,24 +944,21 @@ async function boot() {
   }
 
   if (viewerKey) {
-    await enterViewerMode(viewerKey);
+    await enterViewerMode(viewerKey, !identity);
     return;
   }
 
   if (!identity) {
-    const lastPub = localStorage.getItem(LAST_PUB_KEY);
-    const lastCached = lastPub ? loadCacheFor(lastPub) : null;
-    if (lastCached && Array.isArray(lastCached.cards) && lastCached.cards.length) {
-      state = { ...defaultState(), ...lastCached };
-      state._pub = lastPub;
-      renderAll();
-      toast('👀 Vista local — inicia sesión para editar');
+    const featuredPub = await fromNpub(FEATURED_NPUB).catch(() => null);
+    if (featuredPub) {
+      await enterViewerMode(featuredPub, true);
+    } else {
+      openDlg(loginDialog);
     }
-    openDlg(loginDialog);
-    setSyncStatus('idle');
-  } else {
-    await afterLogin();
+    return;
   }
+
+  await afterLogin();
 }
 
 boot();

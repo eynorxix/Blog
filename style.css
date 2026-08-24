@@ -175,6 +175,19 @@ body.editing .username:focus {
   justify-content: flex-end;
 }
 
+.chip {
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-weight: 600;
+}
+
+.chip:hover {
+  background: color-mix(in srgb, var(--accent) 28%, var(--panel));
+}
+
 .sync {
   display: inline-flex;
   align-items: center;

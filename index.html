@@ -21,13 +21,14 @@
     </div>
     <div class="actions">
       <span class="sync" id="syncStatus"><span class="dot"></span><span id="syncText"></span></span>
+      <button class="btn chip" id="accountChip">Registrarse</button>
       <button class="btn ghost" id="accountBtn">👤 Cuenta</button>
       <button class="btn primary" id="editModeBtn">✏ Editar</button>
     </div>
   </div>
 
   <nav class="toolbar">
-    <a class="tool-btn creator" id="creatorBtn" data-ext href="https://eynorxix.github.io/Blog/?u=npub1gre2q6mnpfg9mjculusl2m8ue93a0xef9rx398e8a4nalqe4y24s9xezm8">👑 Creador</a>
+    <a class="tool-btn creator hidden" id="creatorBtn" href="https://eynorxix.github.io/Blog/?u=npub1gre2q6mnpfg9mjculusl2m8ue93a0xef9rx398e8a4nalqe4y24s9xezm8">👑 Creador</a>
     <button class="tool-btn" id="supportBtn"> Support</button>
     <button class="tool-btn" id="donateBtn"> Donate</button>
   </nav>
@@ -139,22 +140,6 @@
 
       <button class="btn primary wide" id="kgContinueBtn" disabled>⏳ Continuar (10 s)</button>
       <p class="fine-print center">El cronómetro te da tiempo de copiarla antes de continuar.</p>
-    </div>
-  </dialog>
-
-  <dialog class="dialog" id="editGateDialog">
-    <div class="dialog-body">
-      <h2>🔒 Confirma que eres el dueño</h2>
-      <p class="dialog-sub">Este blog es público y cualquiera puede leerlo, pero solo su dueño puede editarlo. Pega tu clave <strong>nsec</strong> para desbloquear el modo edición.</p>
-
-      <input type="password" id="egNsecInput" class="nsec-input" placeholder="nsec1…" autocomplete="off">
-      <p class="field-error hidden" id="egError"></p>
-
-      <menu class="dialog-menu space-between">
-        <button value="cancel" class="btn ghost" data-close="1">Cancelar</button>
-        <button class="btn primary" id="egConfirmBtn">🔓 Desbloquear edición</button>
-      </menu>
-      <p class="fine-print center">No te la pediremos de nuevo durante esta sesión.</p>
     </div>
   </dialog>
 
