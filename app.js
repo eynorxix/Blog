@@ -18,6 +18,7 @@ import { nativeDialog, openDlg, closeDlg } from './js/compat.js';
 const LEGACY_CACHE_KEY = 'bento_blog_cache_v2';
 const LAST_PUB_KEY = 'bento_last_pub';
 const FEATURED_NPUB = 'npub1gre2q6mnpfg9mjculusl2m8ue93a0xef9rx398e8a4nalqe4y24s9xezm8';
+const FEATURED_URL = 'https://eynorxix.github.io/Blog/?u=' + FEATURED_NPUB;
 
 function cacheKeyFor(pub) {
   return 'bento_state_' + String(pub || '').slice(0, 16);
@@ -144,9 +145,21 @@ function applyIdentity() {
 
 function applyChrome() {
   const chip = $('#accountChip');
-  chip.textContent = identity ? 'Perfil' : 'Registrarse';
   const creatorBtn = $('#creatorBtn');
-  creatorBtn.classList.toggle('hidden', !(identity && !viewerKey));
+  const ownView = identity && !viewerKey;
+  const visitingOther = identity && !!viewerKey;
+
+  creatorBtn.classList.toggle('hidden', !identity);
+  if (visitingOther) {
+    creatorBtn.textContent = '↩️ Volver';
+    creatorBtn.removeAttribute('href');
+  } else {
+    creatorBtn.textContent = '👑 Creador';
+    creatorBtn.setAttribute('href', FEATURED_URL);
+  }
+
+  chip.textContent = identity ? 'Perfil' : 'Registrarse';
+  chip.classList.toggle('hidden', visitingOther);
 }
 
 async function goOwnProfile(pubHex) {
@@ -681,8 +694,12 @@ document.querySelectorAll('a[data-ext]').forEach((a) => {
 });
 
 $('#creatorBtn').addEventListener('click', (e) => {
-  if (identity && !viewerKey) return;
-  e.preventDefault();
+  if (identity && viewerKey) {
+    e.preventDefault();
+    location.href = location.origin + location.pathname;
+    return;
+  }
+  if (!identity) e.preventDefault();
 });
 
 $('#accountChip').addEventListener('click', () => {
@@ -944,7 +961,7 @@ async function enterViewerMode(pubkeyHex, isGuest = false) {
   syncStatusEl.style.display = 'none';
   $('#accountBtn').style.display = 'none';
   $('#editModeBtn').style.display = 'none';
-  $('#creatorBtn').classList.add('hidden');
+  applyChrome();
 
   const cached = loadCacheFor(pubkeyHex);
   if (cached) {
