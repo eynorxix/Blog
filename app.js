@@ -183,6 +183,10 @@ function removeCard(id) {
 }
 
 function commit() {
+  if (identity && identity.name !== state.username) {
+    identity.name = state.username;
+    saveIdentity(identity);
+  }
   persistCache();
   schedulePublish();
 }
@@ -211,19 +215,79 @@ async function doPublish() {
   }
 }
 
+let editUnlocked = false;
+
+function toggleEdit() {
+  const editing = document.body.classList.toggle('editing');
+  $('#editModeBtn').textContent = editing ? '✅ Listo' : '✏️ Editar';
+  if (editing) {
+    usernameEl.setAttribute('contenteditable', 'true');
+    toast('✏️ Modo edición activado — pulsa ✅ Listo para salir');
+    usernameEl.focus();
+  } else {
+    usernameEl.removeAttribute('contenteditable');
+    toast('Modo edición cerrado. Tus cambios ya se están publicando ☁️');
+  }
+}
+
 $('#editModeBtn').addEventListener('click', (e) => {
   if (!identity) {
     loginDialog.showModal();
     return;
   }
-  const editing = document.body.classList.toggle('editing');
-  e.currentTarget.textContent = editing ? '✅ Listo' : '✏️ Editar';
-  if (editing) {
-    usernameEl.setAttribute('contenteditable', 'true');
-    usernameEl.focus();
-  } else {
-    usernameEl.removeAttribute('contenteditable');
+  if (identity.type === 'extension') {
+    toggleEdit();
+    return;
   }
+  if (!editUnlocked) {
+    openEditGate();
+    return;
+  }
+  toggleEdit();
+});
+
+const editGateDialog = $('#editGateDialog');
+
+function openEditGate() {
+  $('#egNsecInput').value = '';
+  const err = $('#egError');
+  err.textContent = '';
+  err.classList.add('hidden');
+  editGateDialog.showModal();
+  setTimeout(() => $('#egNsecInput').focus(), 50);
+}
+
+async function confirmEditGate() {
+  const val = $('#egNsecInput').value.trim();
+  const err = $('#egError');
+  err.textContent = '';
+  err.classList.add('hidden');
+
+  if (!val) {
+    err.textContent = 'Pega tu clave nsec para continuar.';
+    err.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const test = await importIdentity(val);
+    if (test.pub !== identity.pub) {
+      err.textContent = 'Esa clave no corresponde a este blog. Revisa que sea tu nsec.';
+      err.classList.remove('hidden');
+      return;
+    }
+    editUnlocked = true;
+    editGateDialog.close();
+    toggleEdit();
+  } catch (err2) {
+    err.textContent = 'nsec inválido: ' + err2.message;
+    err.classList.remove('hidden');
+  }
+}
+
+$('#egConfirmBtn').addEventListener('click', confirmEditGate);
+$('#egNsecInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmEditGate();
 });
 
 usernameEl.addEventListener('beforeinput', (e) => {
@@ -525,7 +589,8 @@ $('#voteCtaBtn').addEventListener('click', () => {
     toast('Crea tu cuenta para votar con tu identidad', 'warn');
     return;
   }
-  location.href = '../DoomsdayGrid/?src=bento';
+  const back = encodeURIComponent(location.origin + location.pathname);
+  location.href = `../DoomsdayGrid/?src=bento&back=${back}`;
 });
 
 function fillAccountDialog(npub) {

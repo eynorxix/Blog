@@ -737,6 +737,12 @@ body.editing .add-card {
   margin-top: 10px;
 }
 
+.field-error {
+  color: var(--danger);
+  font-size: 0.82rem;
+  margin: 2px 0 10px;
+}
+
 .live-dot {
   width: 8px;
   height: 8px;
