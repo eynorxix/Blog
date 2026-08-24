@@ -583,6 +583,13 @@ async function trackUserVote(pubkeyHex) {
   });
 }
 
+$('#supportBtn').addEventListener('click', () => $('#supportDialog').showModal());
+$('#donateBtn').addEventListener('click', () => $('#donateDialog').showModal());
+
+document.querySelectorAll('.copy-addr').forEach((btn) => {
+  btn.addEventListener('click', () => copyText(btn.parentElement.querySelector('input').value, 'Dirección'));
+});
+
 $('#voteCtaBtn').addEventListener('click', () => {
   if (!identity) {
     loginDialog.showModal();
@@ -734,6 +741,11 @@ async function enterViewerMode(pubkeyHex) {
   $('#editModeBtn').style.display = 'none';
   $('#viewerBar').classList.remove('hidden');
 
+  const dismiss = () => {
+    $('#viewerBar').classList.add('hidden');
+    history.replaceState({}, '', location.pathname);
+  };
+  $('#closeViewerBtn').addEventListener('click', dismiss);
   $('#createOwnBtn').addEventListener('click', () => {
     history.replaceState({}, '', location.pathname);
     location.reload();
@@ -764,12 +776,21 @@ async function boot() {
   initRadar();
 
   viewerKey = await resolveViewerKey();
+  identity = loadIdentity();
+
+  if (viewerKey && identity && identity.pub === viewerKey) {
+    viewerKey = null;
+    history.replaceState({}, '', location.pathname);
+    toast('👋 Bienvenido de nuevo, dueño de este blog');
+    await afterLogin();
+    return;
+  }
+
   if (viewerKey) {
     await enterViewerMode(viewerKey);
     return;
   }
 
-  identity = loadIdentity();
   if (!identity) {
     loginDialog.showModal();
     setSyncStatus('idle');

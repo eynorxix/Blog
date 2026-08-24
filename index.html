@@ -9,11 +9,6 @@
 </head>
 <body>
 
-  <div class="viewer-bar hidden" id="viewerBar">
-    <span id="viewerText">Viendo un blog</span>
-    <button class="btn primary" id="createOwnBtn">Crear mi blog</button>
-  </div>
-
   <div class="profile-bar">
     <button class="avatar" id="avatarBtn" title="Cambiar avatar"></button>
     <div class="identity">
@@ -30,6 +25,18 @@
       <button class="btn primary" id="editModeBtn">✏️ Editar</button>
     </div>
   </div>
+
+  <div class="viewer-bar hidden" id="viewerBar">
+    <span class="viewer-text" id="viewerText">Viendo un blog</span>
+    <button class="btn sm primary" id="createOwnBtn">Crear mi blog</button>
+    <button class="btn sm ghost viewer-close" id="closeViewerBtn" title="Ocultar">✕</button>
+  </div>
+
+  <nav class="toolbar">
+    <a class="tool-btn creator" href="https://eynorxix.github.io/Blog/?u=npub1survd7dr0z582gu6kkh4fxl6rwj3fzq3vcgu2fq46kj6t2253s7qdmpn9a" target="_blank" rel="noopener">👑 Creador</a>
+    <button class="tool-btn" id="supportBtn">🤝 Support</button>
+    <button class="tool-btn" id="donateBtn">💝 Donate</button>
+  </nav>
 
   <main class="bento" id="bento">
     <section class="card radar-card" id="radarCard" data-size="big">
@@ -146,6 +153,51 @@
         <button class="btn primary" id="egConfirmBtn">🔓 Desbloquear edición</button>
       </menu>
       <p class="fine-print center">No te la pediremos de nuevo durante esta sesión.</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" id="supportDialog">
+    <div class="dialog-body">
+      <h2>🤝 Support</h2>
+      <p class="dialog-sub">Sígueme en mis redes para más proyectos:</p>
+      <div class="social-list">
+        <a class="social-btn" href="https://x.com/eynor_xix" target="_blank" rel="noopener">𝕏 · @eynor_xix</a>
+        <a class="social-btn" href="https://www.reddit.com/u/eynorxix/s/oZCR0PIqin" target="_blank" rel="noopener">Reddit · u/eynorxix</a>
+      </div>
+      <menu class="dialog-menu">
+        <button value="cancel" class="btn primary" onclick="this.closest('dialog').close()">Listo</button>
+      </menu>
+    </div>
+  </dialog>
+
+  <dialog class="dialog" id="donateDialog">
+    <div class="dialog-body">
+      <h2>💝 Donate</h2>
+      <p class="dialog-sub">Si te gusta lo que hago, tu apoyo ayuda a mantener estos proyectos vivos.</p>
+
+      <div class="crypto-card">
+        <div class="crypto-name">Polygon</div>
+        <img class="crypto-qr" src="assets/qr-polygon.jpg" alt="QR Polygon">
+        <div class="copy-row">
+          <input type="text" readonly value="0x6bDb191A11B247fDCCFFD66fe6092969Ab549378">
+          <button type="button" class="btn ghost sm copy-addr">Copiar</button>
+        </div>
+        <a class="qr-download" href="assets/qr-polygon.jpg" download="QR_Polygon">Descargar QR</a>
+      </div>
+
+      <div class="crypto-card">
+        <div class="crypto-name">Bitcoin (BTC)</div>
+        <img class="crypto-qr" src="assets/qr-bitcoin.jpg" alt="QR Bitcoin">
+        <div class="copy-row">
+          <input type="text" readonly value="bc1q67aw0uuw2s4zq2cyp97qpnpf8zhusyvr5dzm2w">
+          <button type="button" class="btn ghost sm copy-addr">Copiar</button>
+        </div>
+        <a class="qr-download" href="assets/qr-bitcoin.jpg" download="QR_Bitcoin">Descargar QR</a>
+      </div>
+
+      <menu class="dialog-menu">
+        <button value="cancel" class="btn primary" onclick="this.closest('dialog').close()">Cerrar</button>
+      </menu>
     </div>
   </dialog>
 
