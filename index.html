@@ -2,8 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Mi Blog</title>
+  <meta name="theme-color" content="#7c5cff">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EynorBlog">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -143,6 +151,17 @@
     </div>
   </dialog>
 
+  <dialog class="dialog" id="joinDialog">
+    <div class="dialog-body">
+      <h2>📲 Crea tu blog</h2>
+      <p class="dialog-sub" id="joinText">Instala la app en tu teléfono y ten tu blog siempre a mano: se publica en Nostr, funciona sin internet y se actualiza sola.</p>
+
+      <button class="btn primary wide" id="joinInstallBtn">📲 Instalar la app</button>
+      <button class="btn ghost wide" id="joinSkipBtn">Continuar sin instalar →</button>
+      <p class="fine-print center hidden" id="joinIosNote">En iPhone: comparte esta página → "Agregar a inicio". En TikTok: usa ⋮ → "Abrir en navegador".</p>
+    </div>
+  </dialog>
+
   <dialog class="dialog" id="supportDialog">
     <div class="dialog-body">
       <h2>🤝 Support</h2>
@@ -246,6 +265,11 @@
 
   <div id="toasts"></div>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
   <script type="module" src="app.js"></script>
 </body>
 </html>

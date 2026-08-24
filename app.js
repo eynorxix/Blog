@@ -93,6 +93,22 @@ const accountDialog = $('#accountDialog');
 const syncStatusEl = $('#syncStatus');
 const syncTextEl = $('#syncText');
 
+let deferredInstallPrompt = null;
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  toast('📲 App instalada — búscala en tu pantalla de inicio');
+});
+
 let identity = null;
 let viewerKey = null;
 
@@ -670,11 +686,49 @@ $('#creatorBtn').addEventListener('click', (e) => {
 });
 
 $('#accountChip').addEventListener('click', () => {
-  if (!identity) {
+  if (identity) {
+    openDlg(accountDialog);
+    return;
+  }
+  if (isStandalone()) {
     openDlg(loginDialog);
     return;
   }
-  openDlg(accountDialog);
+  const canInstall = !!deferredInstallPrompt;
+  $('#joinInstallBtn').classList.toggle('hidden', !canInstall);
+  $('#joinIosNote').classList.toggle('hidden', canInstall);
+  $('#joinText').textContent = canInstall
+    ? 'Instala la app en tu teléfono y ten tu blog siempre a mano: se publica en Nostr, funciona sin internet y se actualiza sola.'
+    : 'Tu navegador actual no permite instalar la app directamente. Puedes crear tu cuenta igualmente — para instalarla, abre el blog en Chrome.';
+  openDlg($('#joinDialog'));
+});
+
+$('#joinInstallBtn').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) {
+    closeDlg($('#joinDialog'));
+    openDlg(loginDialog);
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  try {
+    const choice = await deferredInstallPrompt.userChoice;
+    if (!choice || choice.outcome !== 'accepted') {
+      closeDlg($('#joinDialog'));
+      openDlg(loginDialog);
+    } else {
+      closeDlg($('#joinDialog'));
+      toast('📲 Instalando… ábrela desde tu pantalla de inicio');
+    }
+  } catch (err) {
+    closeDlg($('#joinDialog'));
+    openDlg(loginDialog);
+  }
+  deferredInstallPrompt = null;
+});
+
+$('#joinSkipBtn').addEventListener('click', () => {
+  closeDlg($('#joinDialog'));
+  openDlg(loginDialog);
 });
 
 document.querySelectorAll('.copy-addr').forEach((btn) => {
