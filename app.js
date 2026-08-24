@@ -17,7 +17,7 @@ import { nativeDialog, openDlg, closeDlg } from './js/compat.js';
 
 const LEGACY_CACHE_KEY = 'bento_blog_cache_v2';
 const LAST_PUB_KEY = 'bento_last_pub';
-const FEATURED_NPUB = 'npub1gre2q6mnpfg9mjculusl2m8ue93a0xef9rx398e8a4nalqe4y24s9xezm8';
+const FEATURED_NPUB = 'npub1zdy6e00hkvpus0wwt4zhghp22cax9zf2xye6ghklhqc4mr2lnxvqkz7f0s';
 const FEATURED_URL = 'https://eynorxix.github.io/Blog/?u=' + FEATURED_NPUB;
 
 function cacheKeyFor(pub) {
