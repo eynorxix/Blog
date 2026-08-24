@@ -47,8 +47,6 @@ function persistCache() {
 
 const COLORS = ['#7c5cff', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
 
-const EMOJIS = ['🐱','🦊','🐼','🐸','🦉','🐺','🦁','🐯','🐨','🐵','🦄','🐙','🌸','🌙','⚡','🔥','💫','🎧','🎮','📚','☕','🪴','🧠','🚀'];
-
 const SIZES = ['sm', 'wide', 'tall', 'big'];
 const SIZE_ICONS = { sm: '▫️', wide: '▬', tall: '▮', big: '◼' };
 
@@ -83,11 +81,9 @@ let state = demoState();
 
 const $ = (sel) => document.querySelector(sel);
 const usernameEl = $('#username');
-const avatarBtn = $('#avatarBtn');
 const bento = $('#bento');
 const addCardBtn = $('#addCardBtn');
 const cardDialog = $('#cardDialog');
-const avatarDialog = $('#avatarDialog');
 const loginDialog = $('#loginDialog');
 const keyGuardDialog = $('#keyGuardDialog');
 const accountDialog = $('#accountDialog');
@@ -133,13 +129,6 @@ function setSyncStatus(mode) {
 function applyIdentity() {
   usernameEl.textContent = state.username;
   document.title = `${state.username} · blog`;
-  if (state.avatarUrl) {
-    avatarBtn.textContent = '';
-    avatarBtn.style.backgroundImage = `url("${state.avatarUrl}")`;
-  } else {
-    avatarBtn.style.backgroundImage = '';
-    avatarBtn.textContent = state.avatar || '🙂';
-  }
   applyChrome();
 }
 
@@ -498,62 +487,6 @@ $('#saveCardBtn').addEventListener('click', () => {
   commit();
   renderCards();
   closeDlg(cardDialog, 'confirm');
-});
-
-let pickedEmoji = '🙂';
-let pendingAvatarData = null;
-
-avatarBtn.addEventListener('click', () => {
-  if (!identity) {
-    openDlg(loginDialog);
-    return;
-  }
-  pickedEmoji = state.avatar || '🙂';
-  pendingAvatarData = null;
-  $('#avatarFileInput').value = '';
-  $('#avatarUploadStatus').textContent = '';
-  renderEmojiGrid();
-  openDlg(avatarDialog);
-});
-
-function renderEmojiGrid() {
-  const wrap = $('#emojiGrid');
-  wrap.innerHTML = '';
-  for (const em of EMOJIS) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'emoji-option' + (em === pickedEmoji ? ' selected' : '');
-    b.textContent = em;
-    b.addEventListener('click', () => {
-      pickedEmoji = em;
-      pendingAvatarData = null;
-      renderEmojiGrid();
-    });
-    wrap.appendChild(b);
-  }
-}
-
-$('#avatarFileInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const url = await uploadToBlossom(file, $('#avatarUploadStatus'));
-  if (url) {
-    pendingAvatarData = url;
-    renderEmojiGrid();
-  }
-});
-
-$('#avatarConfirmBtn').addEventListener('click', () => {
-  if (pendingAvatarData) {
-    state.avatarUrl = pendingAvatarData;
-    state.avatar = '';
-  } else {
-    state.avatar = pickedEmoji;
-    state.avatarUrl = '';
-  }
-  commit();
-  applyIdentity();
-  closeDlg(avatarDialog, 'confirm');
 });
 
 let kgAllowClose = false;
