@@ -79,32 +79,6 @@ button {
   display: none !important;
 }
 
-.viewer-bar {
-  max-width: 1100px;
-  margin: 12px auto -4px;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.viewer-bar .viewer-text {
-  flex: 1;
-  min-width: 0;
-  background: var(--panel);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
-  border-radius: 999px;
-  padding: 9px 16px;
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.viewer-bar .btn {
-  flex-shrink: 0;
-}
-
 body.viewer .username:hover {
   background: transparent;
 }
@@ -476,6 +450,30 @@ dialog.modal {
   padding: 10px 12px;
   font: inherit;
   margin-bottom: 8px;
+}
+
+.nsec-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.nsec-row .nsec-input {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.eye-btn {
+  flex-shrink: 0;
+  padding: 8px 12px;
+}
+
+.field-error {
+  margin: 2px 0 0;
+  color: var(--danger, #ff5566);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .nsec-input {
@@ -922,11 +920,6 @@ dialog.modal {
     justify-content: center;
     padding: 11px 10px;
     font-size: 0.85rem;
-  }
-
-  .viewer-bar {
-    padding: 0 14px;
-    margin-top: 10px;
   }
 
   .actions {

@@ -840,6 +840,8 @@ async function boot() {
     $('#compatNote').classList.remove('hidden');
   }
 
+  loadNostrLib().catch(() => {});
+
   if (window.nostr && window.nostr.getPublicKey) {
     $('#btnExtension').classList.remove('hidden');
   }
